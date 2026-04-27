@@ -1,12 +1,17 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import Exa from "exa-js";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
+// Lazily initialized so build-time evaluation doesn't require env vars
+function getAnthropic() {
+  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+}
 
-const exa = new Exa(process.env.EXA_API_KEY!);
+function getExa() {
+  return new Exa(process.env.EXA_API_KEY!);
+}
 
 export interface MeetingPrepRequest {
   attendees: Array<{
@@ -58,6 +63,7 @@ async function researchAttendee(
   let background = "";
 
   try {
+    const exa = getExa();
     const [profileResult, newsResult] = await Promise.all([
       exa.searchAndContents(queries[0], {
         numResults: 2,
@@ -154,6 +160,7 @@ Generate a structured meeting brief in the following JSON format:
 
 Be specific, actionable, and tailored to the actual people and context. Return ONLY valid JSON.`;
 
+  const anthropic = getAnthropic();
   const message = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 2048,
